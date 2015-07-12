@@ -1,0 +1,300 @@
+
+'Option Explicit
+Function Circumcenter(x1 As Double, y1 As Double, _
+                      x2 As Double, y2 As Double, _
+                      x3 As Double, y3 As Double) As Variant
+    Dim a           As Double
+    Dim B           As Double
+    Dim C           As Double
+    Dim D           As Double
+
+    a = x1 ^ 2 + y1 ^ 2
+    B = x2 ^ 2 + y2 ^ 2
+    C = x3 ^ 2 + y3 ^ 2
+    D = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2))
+    
+    If D = 0 Then
+        Circumcenter = "Collinear!"
+    Else
+        Circumcenter = Array((a * (y2 - y3) + B * (y3 - y1) + C * (y1 - y2)) / D, _
+                             (a * (x3 - x2) + B * (x1 - x3) + C * (x2 - x1)) / D)
+    End If
+End Function
+
+Sub cleanACAD()
+Dim i As Long
+
+lastrow = Range("a" & Rows.Count).End(xlUp).Row
+
+For i = 1 To lastrow
+    Cells(i, 1).Value = WorksheetFunction.Trim(Cells(i, 1).Value)
+Next i
+End Sub
+
+
+Sub pokupiACAD()
+On Error Resume Next
+Dim i As Long
+Dim i2 As Long
+Dim lastrow As Long
+Dim layer As Integer
+Dim poslayer As Integer
+Dim linetype As String
+Dim a As String
+Dim layername As String
+Dim posX As Integer
+Dim posY As Integer
+Dim posZ As Integer
+Dim fromX As String
+Dim fromY As String
+Dim fromZ As String
+Dim toX As String
+Dim toY As String
+Dim toZ As String
+Dim centX As String
+Dim centY As String
+Dim centZ As String
+Dim length As String
+Dim bulge As String
+Dim radius As String
+Dim startangle As String
+Dim endangle As String
+
+
+With Application
+.ScreenUpdating = False
+.Calculation = xlCalculationManual
+End With
+
+i2 = 1
+Sheet9.Activate
+lastrow = Range("a" & Rows.Count).End(xlUp).Row
+
+With Sheet8
+.Range(.Cells(2, 1), .Cells(20000, 22)).ClearContents
+
+
+For i = 1 To lastrow
+    a = Cells(i, 1).Value
+    poslayer = InStr(1, a, "Layer")
+    If poslayer > 0 Then
+        layer = layer + 1
+        linetype = Trim(Left(a, poslayer - 1))
+        layername = Replace(Mid(a, poslayer + 7, 100), Chr(34), "")
+'find how to replace " in VBA
+
+
+    Else
+        If linetype = "LWPOLYLINE" Then
+            If InStr(1, a, "Handle") > 0 Then handle = Trim(Mid(a, 9, 100))
+            If InStr(1, a, "length") > 0 Then length = Trim(Mid(a, 7, 100))
+            
+
+            
+            posX = InStr(1, a, "X=")
+'            posY = InStr(1, a, "Y")
+'            posZ = InStr(1, a, "Z")
+            If posX > 0 Then
+            i2 = i2 + 1
+                fromX = GETNUM_B2P(a, "X", "Y")
+                fromY = GETNUM_B2P(a, "Y", "Z")
+                fromZ = GETNUM_AL(a, "Z")
+                If InStr(1, Cells(i - 1, 1), "point") > 0 Then
+                    i2 = i2 - 1
+'                    toX = Mid(a, posX + 1, posY - posX - 1)
+'                    toY = Mid(a, posY + 1, posY - posX - 1)
+'                    toZ = Mid(a, posZ + 1, 100)
+                    
+                    toX = fromX
+                    toY = fromY
+                    toZ = fromZ
+                    
+                    GoTo 300
+            End If
+                If InStr(1, a, "center") > 0 Then
+                    bulge = Trim(Mid(Cells(i - 1, 1), 6, 100))
+                    radius = Trim(Mid(Cells(i + 1, 1), 7, 100))
+                    startangle = Trim(Mid(Cells(i + 2, 1), 12, 100))
+                    endangle = Trim(Mid(Cells(i - 1, 1), 10, 100))
+                    GoTo 100
+'                    centX = Mid(a, posX + 1, posY - posX - 1)
+'                    centY = Mid(a, posY + 1, posY - posX - 1)
+'                    centZ = Mid(a, posZ + 1, 100)
+                End If
+'                Cells(2, 2) = Val(Trim(Replace(fromX, "=", "")))
+                
+
+                GoTo 200
+100
+                .Cells(i2, WorksheetFunction.Match("Bulge", .Rows(1), 0)) = bulge
+                .Cells(i2, WorksheetFunction.Match("Radius", .Rows(1), 0)) = radius
+                .Cells(i2, WorksheetFunction.Match("Start Angle", .Rows(1), 0)) = startangle
+                .Cells(i2, WorksheetFunction.Match("End Angle", .Rows(1), 0)) = endangle
+                .Cells(i2, WorksheetFunction.Match("Point type", .Rows(1), 0)) = "Center"
+                
+200
+                .Cells(i2, WorksheetFunction.Match("From X", .Rows(1), 0)) = Val(Trim(Replace(fromX, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("From Y", .Rows(1), 0)) = Val(Trim(Replace(fromY, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("From Z", .Rows(1), 0)) = Val(Trim(Replace(fromZ, "=", "")))
+                GoTo 400
+300
+                .Cells(i2, WorksheetFunction.Match("To X", .Rows(1), 0)) = Val(Trim(Replace(toX, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("To Y", .Rows(1), 0)) = Val(Trim(Replace(toY, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("To Z", .Rows(1), 0)) = Val(Trim(Replace(toZ, "=", "")))
+400
+
+                .Cells(i2, WorksheetFunction.Match("Layer Type", .Rows(1), 0)) = linetype
+                .Cells(i2, WorksheetFunction.Match("Layer Name", .Rows(1), 0)) = layername
+                .Cells(i2, WorksheetFunction.Match("Handle", .Rows(1), 0)) = handle
+                .Cells(i2, WorksheetFunction.Match("Length", .Rows(1), 0)) = length
+
+            End If
+        
+            
+        ElseIf linetype = "SPLINE" Then
+            If InStr(1, a, "Handle") > 0 Then handle = Trim(Mid(a, 9, 100))
+' reset counter for the points type
+                If handle <> .Cells(i2, 4) Then
+                    i3 = 0
+                    i4 = 0
+'                    cp = 0
+'                    fp = 0
+                End If
+            
+            If InStr(1, a, "length") > 0 Then length = Trim(Mid(a, 7, 100))
+            If InStr(1, a, "Order") > 0 Then Order = Trim(Mid(a, 7, 100))
+            If InStr(1, a, "Parametric") > 0 Then
+                ParametricS = GETNUM_AL(a, "Start")
+                ParametricE = GETNUM_AL(Cells(i + 1, 1), "End")
+            End If
+            If InStr(1, a, "length") > 0 Then length = Trim(Mid(a, 7, 100))
+
+            If InStr(1, a, "Number of control points: ") > 0 Then
+                cp = GETNUM_AL(a, "Number of control points:")
+            End If
+            If InStr(1, a, "Number of fit points: ") > 0 Then fp = GETNUM_AL(a, "Number of fit points:")
+'            End If
+            posX = InStr(1, a, "X")
+'            posY = InStr(1, a, "Y")
+'            posZ = InStr(1, a, "Z")
+            If posX > 0 Then
+                i2 = i2 + 1
+        
+                fromX = GETNUM_B2P(a, "X", "Y")
+                fromY = GETNUM_B2P(a, "Y", "Z")
+                fromZ = GETNUM_AL(a, "Z")
+                .Cells(i2, WorksheetFunction.Match("From X", .Rows(1), 0)) = fromX
+                .Cells(i2, WorksheetFunction.Match("From Y", .Rows(1), 0)) = fromY
+                .Cells(i2, WorksheetFunction.Match("From Z", .Rows(1), 0)) = fromZ
+                .Cells(i2, WorksheetFunction.Match("Layer Type", .Rows(1), 0)) = linetype
+                .Cells(i2, WorksheetFunction.Match("Layer Name", .Rows(1), 0)) = layername
+                .Cells(i2, WorksheetFunction.Match("Handle", .Rows(1), 0)) = handle
+                .Cells(i2, WorksheetFunction.Match("Length", .Rows(1), 0)) = length
+                
+                .Cells(i2, WorksheetFunction.Match("Order", .Rows(1), 0)) = Order
+                .Cells(i2, WorksheetFunction.Match("Parametric start", .Rows(1), 0)) = ParametricS
+                .Cells(i2, WorksheetFunction.Match("Parametric End", .Rows(1), 0)) = ParametricE
+
+                If i3 < cp Then
+                i3 = i3 + 1
+                .Cells(i2, WorksheetFunction.Match("Point type", .Rows(1), 0)) = "Control"
+                pointid = i3
+                GoTo 500
+                End If
+                
+                If i4 < fp Then
+                i4 = i4 + 1
+                .Cells(i2, WorksheetFunction.Match("Point type", .Rows(1), 0)) = "Fit"
+                pointid = i4
+                End If
+                
+500
+                .Cells(i2, WorksheetFunction.Match("Point ID", .Rows(1), 0)) = pointid
+
+             End If
+        ElseIf linetype = "LINE" Then
+            If InStr(1, a, "Handle") > 0 Then handle = Trim(Mid(a, 9, 100))
+'            If InStr(1, a, "length") > 0 Then length = Trim(Mid(a, 7, 100))
+
+            posX = InStr(1, a, "X=")
+            If posX > 0 Then
+            i2 = i2 + 1
+                fromX = GETNUM_B2P(a, "X", "Y")
+                fromY = GETNUM_B2P(a, "Y", "Z")
+                fromZ = GETNUM_AL(a, "Z")
+                toX = GETNUM_B2P(Cells(i + 1, 1), "X", "Y")
+                toY = GETNUM_B2P(Cells(i + 1, 1), "Y", "Z")
+                toZ = GETNUM_AL(Cells(i + 1, 1), "Z")
+                .Cells(i2, WorksheetFunction.Match("From X", .Rows(1), 0)) = Val(Trim(Replace(fromX, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("From Y", .Rows(1), 0)) = Val(Trim(Replace(fromY, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("From Z", .Rows(1), 0)) = Val(Trim(Replace(fromZ, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("To X", .Rows(1), 0)) = Val(Trim(Replace(toX, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("To Y", .Rows(1), 0)) = Val(Trim(Replace(toY, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("To Z", .Rows(1), 0)) = Val(Trim(Replace(toZ, "=", "")))
+                .Cells(i2, WorksheetFunction.Match("Layer Type", .Rows(1), 0)) = linetype
+                .Cells(i2, WorksheetFunction.Match("Layer Name", .Rows(1), 0)) = layername
+                .Cells(i2, WorksheetFunction.Match("Handle", .Rows(1), 0)) = handle
+'skip 4 next lines
+                i = i + 1
+            End If
+                If InStr(1, a, "Length") > 0 Then length = GETNUM_B2P(a, "=", ",")
+                .Cells(i2, WorksheetFunction.Match("Length", .Rows(1), 0)) = length
+                
+        ElseIf linetype = "BLOCK REFERENCE" Then
+            If InStr(1, a, "Handle") > 0 Then handle = Trim(Mid(a, 9, 100))
+            If InStr(1, a, "Name:") > 0 Then blkname = Trim(Replace(Mid(a, 12, 100), Chr(34), ""))
+'            If InStr(1, a, "Name:") > 0 Then blkname = GETNUM_AL(a, "Name:")
+            If InStr(1, a, "angle:") > 0 Then rangle = GETNUM_AL(a, "angle:")
+
+            posX = InStr(1, a, "X=")
+            If posX > 0 Then
+                i2 = i2 + 1
+        
+                fromX = GETNUM_B2P(a, "X", "Y")
+                fromY = GETNUM_B2P(a, "Y", "Z")
+                fromZ = GETNUM_AL(a, "Z")
+                .Cells(i2, WorksheetFunction.Match("From X", .Rows(1), 0)) = fromX
+                .Cells(i2, WorksheetFunction.Match("From Y", .Rows(1), 0)) = fromY
+                .Cells(i2, WorksheetFunction.Match("From Z", .Rows(1), 0)) = fromZ
+                .Cells(i2, WorksheetFunction.Match("Layer Type", .Rows(1), 0)) = linetype
+                .Cells(i2, WorksheetFunction.Match("Layer Name", .Rows(1), 0)) = layername
+                .Cells(i2, WorksheetFunction.Match("Handle", .Rows(1), 0)) = handle
+                
+                .Cells(i2, WorksheetFunction.Match("Block Name", .Rows(1), 0)) = blkname
+                .Cells(i2, WorksheetFunction.Match("Rotation Angle", .Rows(1), 0)) = rangle
+            End If
+        Else
+
+        End If
+
+    End If
+Next i
+.Activate
+End With
+With Application
+.ScreenUpdating = True
+.Calculation = xlCalculationAutomatic
+End With
+End Sub
+
+Function GETNUM_B2P(text As String, str1 As String, str2 As String) As Double
+' gives back the number between two text values
+On Error Resume Next
+            posX = InStr(1, text, str1)
+            posY = InStr(1, text, str2)
+ '           posZ = InStr(1, a, "Z")
+            
+                res_str1 = Val(Trim(Replace(Replace(Mid(text, posX + Len(str1), posY - posX - Len(str1)), "=", ""), ",", "")))
+'                res_str2 = Val(Trim(Replace(Replace(Mid(text, posY + 1, posY - posX - 1), "=", ""), ",", "")))
+                'Z = Val(Trim(Replace(Replace(Mid(a, posZ + 1, 100), "=", ""), ",", "")))
+            GETNUM_B2P = res_str1a
+End Function
+
+Function GETNUM_AL(text As String, str1 As String) As Double
+'gives number after text at the end
+On Error Resume Next
+            posZ = InStr(1, text, str1)
+            
+                res_str1 = Val(Trim(Replace(Replace(Mid(text, posZ + Len(str1), 100), "=", ""), ",", "")))
+            GETNUM_AL = res_str1
+End Function
